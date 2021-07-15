@@ -9,6 +9,6 @@ Aplicação da função de otimização multimodal para encontrar o mínimo loca
   <li> Parâmetros: tamanho da população, número de gerações, probabilidade de mutação e probabilidade de cruzamento </li>
 </ul>
 
-<div style="align: center; justify: center;">
+<div style="display: block; align: center; justify: center">
   <img height="120" width="400" src="img/equation.jpg">
 </div>
