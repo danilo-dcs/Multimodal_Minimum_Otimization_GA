@@ -11,4 +11,4 @@ Aplicação da função de otimização multimodal para encontrar o mínimo loca
 
 ![](/img/function.jpg)
 
-<img src="/img/function.jpg" />
+<img height="100" width="300" src="/img/function.jpg">
