@@ -8,3 +8,7 @@ Aplicação da função de otimização multimodal para encontrar o mínimo loca
   <li> O objetivo é encontrar o mínimo global </li>
   <li> Parâmetros: tamanho da população, número de gerações, probabilidade de mutação e probabilidade de cruzamento </li>
 </ul>
+
+<div style="display: block; margin-left: auto; margin-right: auto;">
+  <img height="110" width="400" src="img/equation.jpg">
+</div>
