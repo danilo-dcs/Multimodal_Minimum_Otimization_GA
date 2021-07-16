@@ -3,9 +3,7 @@
 #include <cmath>
 #include <vector>
 #include <ctime>
-#include <iomanip>
-#include <vector>
-#include <algorithm>
+
 
 using namespace std;
 
@@ -15,7 +13,7 @@ using namespace std;
 
 typedef struct{
     float fitness_value;
-    vector<int> binary_genes;             // a concatenação de x1 + x2 convertidos em binário
+    vector<int> cromosom;             // a concatenação de x1 + x2 convertidos em binário
 } Individue;
 
 
@@ -25,7 +23,7 @@ typedef struct{
 const int n_bits = 18;                  // número de bits para representar 200 000 números
 const int population_size = 10;         // tamanho da população
 const int generations_number = 50;      //  número de gerações
-const float mutation_prob = 0.02;        // probabilidade de mutação
+const float mutation_prob = 0.2;        // probabilidade de mutação
 const float crossing_prob = 0.6;        // probabilidade de cruzamento
 
 
@@ -38,7 +36,7 @@ int float2thousands(float num);         // conversão de float com 4 casas para 
 float thousands2float(int num);                                   // conversão de inteiro para decimal entre -10 e 10
 
 int randomNumber();                                         // geração de número aleatório entre 0 e 200 000
-float multimodal_function(float x1, float x2);              // cálculo do valor fitness                          
+float multimodalFunction(float x1, float x2);              // cálculo do valor fitness                          
 
 void initializePopulation(vector<Individue> &population);    //  inicializa a população
 void showPopulation(vector<Individue> population);           // mostra a população
@@ -46,10 +44,11 @@ void showPopulation(vector<Individue> population);           // mostra a popula�
 int getX1(vector<int> b_number);
 int getX2(vector<int> b_number);  
 
-vector<int> gene_create(int x1, int x2);                        // criação do código genético
-void mutation(vector<int> &binary_genes);                       // mutação  
-void crossover(vector<int> &genes1, vector<int> &genes2);          // crossover
-float fitting_value(vector<int> binary_genes);
+vector<int> createCromosom(int x1, int x2);                        // criação do código genético
+void mutation(vector<int> &cromosom);                       // mutação  de ponto único
+void crossover(vector<int> &parent1, vector<int> &parent2);       // crossover de ponto único
+float fitting_value(vector<int> cromosom);                  // calcula o valod do fitting
+bool probTest(float p_event);                                  // teste de probabilidade
 
 
 
@@ -60,12 +59,15 @@ int main()
 {
     srand(time(nullptr));
     vector<Individue> population;
+    vector<float> generations_best_fitting;
 
-    vector<int> genes = {1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,1,1,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0};
+    vector<int> genes = {1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
-    float fit = fitting_value(genes);
+    initializePopulation(population);
 
-    cout<<endl<<"Fitting: "<<fit<<endl;
+    cout<<endl;
+    showPopulation(population);
+    cout<<endl;
 
     return 0;
 }
@@ -76,40 +78,84 @@ int main()
 
 void initializePopulation(vector<Individue> &population){
 
+    population.clear();         // limpando a população
+
+    for(int i=0; i<population_size; i++){
+
+        Individue genotype;
+
+        int num1 = randomNumber(); 
+        int num2 = randomNumber();
+        genotype.cromosom = createCromosom(num1,num2);
+        genotype.fitness_value = multimodalFunction(thousands2float(num1),thousands2float(num2));
+        population.push_back(genotype);
+    }
 }
 
 void showPopulation(vector<Individue> population){
+
+    for(int i=0; i<population_size;i++){
+        cout<<"Individuo "<< i << ": ";
+        for(int j=0; j<n_bits*2;j++){
+            cout<<population[i].cromosom[j]<< " ";
+        }
+        cout<< "  Fitness: "<<population[i].fitness_value;
+        cout<<endl;
+    }
     
 }
 
-void mutation(vector<int> &binary_genes){
+void mutation(vector<int> &cromosom){           // mutação de ponto único
 
+    int index = rand()%(n_bits*2);             // sorteando um ponto de mutação do cromossomo
+
+    if(cromosom[index] == 0){           // invertendo o valor do gene
+        cromosom[index] = 1;
+    }else{
+        cromosom[index] = 0;
+    }
 }
 
-void crossover(vector<int> &genes1, vector<int> &genes2){
+void crossover(vector<int> &parent1, vector<int> &parent2){
 
+    int crossover_index;
+
+    do{         // garantir que o ponto de cruzamento não é o início e nem o fim do vetor
+        crossover_index = rand()%(n_bits*2)
+    }while( crossover_index==0 || crossover_index == (n_bits*2 - 1) );
+
+    vector<int> child1, child2;
+
+    for(int i=0; i <= crossover_index; i++){
+        child1.push_back(parent1[i]);
+        child2.push_back(parent2[i]);
+    }
+
+    for(int i=crossover_index+1; i<n_bits*2; i++){
+        child1.push_back(parent2[i]);
+        child2.push_back(parent1[i]);
+    }
+
+    parent1 = child1;
+    parent2 = child2;
 }
 
-float fitting_value(vector<int> binary_genes){
+float fitting_value(vector<int> cromosom){
 
     int num1,num2;
     float x1, x2;
 
-    num1 = getX1(binary_genes);
-    num2 = getX2(binary_genes);
-
-    printf("\nNum 1: %d | Num 2: %d \n", num1, num2);
+    num1 = getX1(cromosom);
+    num2 = getX2(cromosom);
 
     x1 = thousands2float(num1);
     x2 = thousands2float(num2);
 
-    printf("\nX1: %f | X2: %f \n", x1, x2);
-
-    return multimodal_function(x1,x2);
+    return multimodalFunction(x1,x2);
 
 }
 
-vector<int> gene_create(int x1, int x2){
+vector<int> createCromosom(int x1, int x2){
     
     vector<int> v1,v2;
 
@@ -127,7 +173,7 @@ vector<int> gene_create(int x1, int x2){
 // FUNÇÕES MATEMÁTICAS E DE CONVERSÃO //
 
 
-float multimodal_function(float x1, float x2){
+float multimodalFunction(float x1, float x2){
     float f_x = 0.0, a1 = 0.0, a2 = 0.0;
 
     for(int i = 1; i <= 5; i++){
@@ -136,6 +182,15 @@ float multimodal_function(float x1, float x2){
     }
     f_x = a1*a2;
     return f_x;
+}
+
+bool probTest(float p_event){
+
+    float prob = (float) (rand()%100) / 100.0;        // gerando um número aleatório de evento
+
+    if(prob <= p_event)                                // verificando se o evento gerado acontece
+        return true;
+    return false;
 }
 
 int randomNumber(){
