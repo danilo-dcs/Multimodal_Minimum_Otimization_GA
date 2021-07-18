@@ -10,47 +10,50 @@ using namespace std;
 
 // ********************** INDIVIDUO *********************** //
 
-
 typedef struct{
     float fitness_value;
     vector<int> cromosom;             // a concatenação de x1 + x2 convertidos em binário
 } Individue;
 
-
 // ********************** PARAM *********************** //
 
-
 const int n_bits = 18;                  // número de bits para representar 200 000 números
-const int population_size = 10;         // tamanho da população
-const int generations_number = 50;      //  número de gerações
-const float mutation_prob = 0.2;        // probabilidade de mutação
-const float crossing_prob = 0.6;        // probabilidade de cruzamento
+const int population_size = 50;         // tamanho da população
+const int generations_number = 200;      //  número de gerações
+const float mutation_prob = 0.1;        // probabilidade de mutação
+const float crossing_prob = 0.8;        // probabilidade de cruzamento
+const float K = 0.75;                    // constante do torneio
+const float n_elitism = 0.2;            // elitismo de 20%
 
 
 // ********************** FUNÇÕES *********************** //
 
 
+// conversão
 void int2binary(int number, vector<int> &res);          // converter inteiro para binário
 int binary2int(vector<int> b_number, int begin, int end);        // converter string binária para inteiro
 int float2thousands(float num);         // conversão de float com 4 casas para inteiro de 0 a 200 000
 float thousands2float(int num);                                   // conversão de inteiro para decimal entre -10 e 10
 
+// matemáticas
 int randomNumber();                                         // geração de número aleatório entre 0 e 200 000
 float multimodalFunction(float x1, float x2);              // cálculo do valor fitness                          
 
+// utilidades
 void initializePopulation(vector<Individue> &population);    //  inicializa a população
 void showPopulation(vector<Individue> population);           // mostra a população
-
 int getX1(vector<int> b_number);
 int getX2(vector<int> b_number);  
-
-vector<int> createCromosom(int x1, int x2);                        // criação do código genético
-void mutation(vector<int> &cromosom);                       // mutação  de ponto único
-void crossover(vector<int> &parent1, vector<int> &parent2);       // crossover de ponto único
-float fitting_value(vector<int> cromosom);                  // calcula o valod do fitting
 bool probTest(float p_event);                                  // teste de probabilidade
 
-
+// algoritmo genético
+vector<int> createCromosom(int x1, int x2);                        // criação do código genético
+void mutation(vector<int> &cromosom);                       // mutação  de ponto único
+void elitism(vector<Individue> population, vector<Individue> &newGeneration);
+float fit_value(vector<int> cromosom);                  // calcula o valod do fitting
+void fitPopulation(vector<Individue> &population, vector<float> &generations_best_fitting);
+int tournament(vector<Individue> population, int n_candidates, float K);
+vector<int> crossover(vector<int> &parent1, vector<int> &parent2);
 
 // ********************** MAIN *********************** //
 
@@ -61,12 +64,54 @@ int main()
     vector<Individue> population;
     vector<float> generations_best_fitting;
 
-    vector<int> genes = {1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-
+    cout<<"POPULAÇÃO INICIAL: "<< endl;
     initializePopulation(population);
-
-    cout<<endl;
+    fitPopulation(population, generations_best_fitting);
     showPopulation(population);
+
+    //LÓGICA DO ALGORITMO GENÉTICO
+    for(int i=0; i<generations_number; i++){
+
+        vector<Individue> newGeneration;
+        newGeneration = population;         // inicializando a nova geração
+        
+        for(int j=0; j<population_size; j++){
+
+            int parent1_index = tournament(population,5,K);         // selecionando o pai 1
+            int parent2_index;
+
+            // selecionando o pai 2, garantindo que seja diferente do pai 1
+            do{
+                parent2_index = tournament(population, 5, K);     
+            } while(parent2_index == parent1_index); 
+
+            // aplicando o cruzamento, caso necessário
+            float pc = (float) (rand()%100)/100;
+            if(pc < crossing_prob){
+                newGeneration[j].cromosom = crossover(population[parent1_index].cromosom, population[parent2_index].cromosom);
+            }
+
+            // aplicando a mutação, caso necessário
+            float pm = (float) (rand()%100)/100;
+            if(pm < mutation_prob){
+                mutation(newGeneration[j].cromosom);
+            }
+        }
+
+        elitism(population, newGeneration);
+
+        fitPopulation(newGeneration, generations_best_fitting);
+        population = newGeneration;             // atribuindo a nova geração à população
+    }
+
+    cout<<endl<<"FITTING POR GERACAO: "<<endl<<endl;
+    if(generations_best_fitting.size()>0){
+        for(int i=0; i<generations_best_fitting.size(); i++){
+            cout<<"Geracao "<< i << " : "<<generations_best_fitting[i]<<endl;
+        }
+    }else{
+        cout<<" Array de best fitting vazio "<<endl<<endl;
+    }
     cout<<endl;
 
     return 0;
@@ -74,7 +119,6 @@ int main()
 
 
 // FUNÇÕES DO GA
-
 
 void initializePopulation(vector<Individue> &population){
 
@@ -87,7 +131,7 @@ void initializePopulation(vector<Individue> &population){
         int num1 = randomNumber(); 
         int num2 = randomNumber();
         genotype.cromosom = createCromosom(num1,num2);
-        genotype.fitness_value = multimodalFunction(thousands2float(num1),thousands2float(num2));
+        genotype.fitness_value = 0;
         population.push_back(genotype);
     }
 }
@@ -105,6 +149,74 @@ void showPopulation(vector<Individue> population){
     
 }
 
+void elitism(vector<Individue> population, vector<Individue> &newGeneration){
+
+    vector<int> elite_population_indexes;
+    int elite_quantity = (int) n_elitism * population_size;     // aplicando a quantidade de indivíduos a ser a elite
+
+
+    // seneciona os índices dos melhores indivíduos
+    float last_best;
+
+    for(int i=0; i<elite_quantity; i++){
+        float best_index;
+        float current_best;
+
+        if(i==0){               // se for a primeira iteração
+            best_index = 0;
+            last_best = population[0].fitness_value;
+        }
+
+        current_best = population[0].fitness_value;
+        for(int j=1; j<population_size; j++){
+            if(population[j].fitness_value < current_best && population[j].fitness_value > last_best){
+                current_best = population[j].fitness_value;
+                best_index = j;
+            }
+        }
+        elite_population_indexes.push_back(best_index);
+        last_best = current_best;
+    }
+
+
+    // aplica a preservação dos melhores indivíduios
+    for(int i=0; i<elite_quantity;i++){
+        int index = elite_population_indexes[i];
+        newGeneration[index] = population[index];
+    }
+
+}
+
+int tournament(vector<Individue> population, int n_candidates, float K){
+    int parent_index;
+    vector<int> candidates;
+
+    for(int i=0; i<n_candidates; i++){  
+        int candidate = rand()%population_size;
+        candidates.push_back(candidate);           // selecionando um candidato aleatório
+        // cout<<"SOrteado : "<< candidate<<endl;
+    }
+
+    float R = (float) (rand()%100)/100;             // gerando um número de 0 a  1;
+    parent_index = candidates[0];
+
+    // cout<<"Tournament prob: " << R<<endl;
+
+    if(R<K){            // seleciona os indivíduos com menor fittnes
+        for(int i=1; i<n_candidates; i++){
+            if(population[i].fitness_value < population[parent_index].fitness_value)
+                parent_index = candidates[i];
+        }
+    }else{              // seleciona os indivíduos com maior fittnes
+        for(int i=1; i<n_candidates; i++){
+            if(population[i].fitness_value > population[parent_index].fitness_value)
+                parent_index = candidates[i];
+        }
+    }
+    
+    return parent_index;
+}
+
 void mutation(vector<int> &cromosom){           // mutação de ponto único
 
     int index = rand()%(n_bits*2);             // sorteando um ponto de mutação do cromossomo
@@ -116,31 +228,29 @@ void mutation(vector<int> &cromosom){           // mutação de ponto único
     }
 }
 
-void crossover(vector<int> &parent1, vector<int> &parent2){
+vector<int> crossover(vector<int> &parent1, vector<int> &parent2){
+
+    vector<int> child;
 
     int crossover_index;
 
     do{         // garantir que o ponto de cruzamento não é o início e nem o fim do vetor
-        crossover_index = rand()%(n_bits*2)
+        crossover_index = rand()%(n_bits*2);
     }while( crossover_index==0 || crossover_index == (n_bits*2 - 1) );
 
-    vector<int> child1, child2;
 
-    for(int i=0; i <= crossover_index; i++){
-        child1.push_back(parent1[i]);
-        child2.push_back(parent2[i]);
+    for(int i=0; i < crossover_index; i++){
+        child.push_back(parent1[i]);
     }
 
-    for(int i=crossover_index+1; i<n_bits*2; i++){
-        child1.push_back(parent2[i]);
-        child2.push_back(parent1[i]);
+    for(int i=crossover_index; i<n_bits*2; i++){
+        child.push_back(parent2[i]);
     }
 
-    parent1 = child1;
-    parent2 = child2;
+    return child;
 }
 
-float fitting_value(vector<int> cromosom){
+float fit_value(vector<int> cromosom){
 
     int num1,num2;
     float x1, x2;
@@ -153,6 +263,24 @@ float fitting_value(vector<int> cromosom){
 
     return multimodalFunction(x1,x2);
 
+}
+
+void fitPopulation(vector<Individue> &population, vector<float> &generations_best_fitting){
+
+    float best;
+
+    for(int i=0; i<population_size; i++){
+        population[i].fitness_value = fit_value(population[i].cromosom);
+
+        if(i==0){
+            best = population[i].fitness_value;
+        }else{
+            if(population[i].fitness_value < best){
+                best = population[i].fitness_value;
+            }
+        }
+    }
+    generations_best_fitting.push_back(best);
 }
 
 vector<int> createCromosom(int x1, int x2){
