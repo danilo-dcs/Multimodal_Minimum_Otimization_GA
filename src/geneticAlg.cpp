@@ -34,23 +34,23 @@ void int2binary(int number, vector<int> &res);          // converter inteiro par
 int binary2int(vector<int> b_number, int begin, int end);        // converter string binária para inteiro
 int float2thousands(float num);         // conversão de float com 4 casas para inteiro de 0 a 200 000
 float thousands2float(int num);                                   // conversão de inteiro para decimal entre -10 e 10
+int getX1(vector<int> b_number);
+int getX2(vector<int> b_number);      
 
 // matemáticas
 int randomNumber();                                         // geração de número aleatório entre 0 e 200 000
-float multimodalFunction(float x1, float x2);              // cálculo do valor fitness                          
+float multimodalFunction(float x1, float x2);              // cálculo do valor fitness          
+bool probTest(float p_event);  
+float fit_value(vector<int> cromosom);                  // calcula o valor do fitting                 
 
 // utilidades
-void initializePopulation(vector<Individue> &population);    //  inicializa a população
-void showPopulation(vector<Individue> population);           // mostra a população
-int getX1(vector<int> b_number);
-int getX2(vector<int> b_number);  
-bool probTest(float p_event);                                  // teste de probabilidade
+void showPopulation(vector<Individue> population);           // mostra a população                           // teste de probabilidade
 
 // algoritmo genético
+void initializePopulation(vector<Individue> &population);    //  inicializa a população
 vector<int> createCromosom(int x1, int x2);                        // criação do código genético
 void mutation(vector<int> &cromosom);                       // mutação  de ponto único
 void elitism(vector<Individue> population, vector<Individue> &newGeneration);
-float fit_value(vector<int> cromosom);                  // calcula o valod do fitting
 void fitPopulation(vector<Individue> &population, vector<float> &generations_best_fitting);
 int tournament(vector<Individue> population, int n_candidates, float K);
 vector<int> crossover(vector<int> &parent1, vector<int> &parent2);
@@ -64,10 +64,10 @@ int main()
     vector<Individue> population;
     vector<float> generations_best_fitting;
 
-    cout<<"POPULAÇÃO INICIAL: "<< endl;
+    // cout<<"POPULAÇÃO INICIAL: "<< endl;
     initializePopulation(population);
     fitPopulation(population, generations_best_fitting);
-    showPopulation(population);
+    // showPopulation(population);
 
     //LÓGICA DO ALGORITMO GENÉTICO
     for(int i=0; i<generations_number; i++){
@@ -101,9 +101,12 @@ int main()
         elitism(population, newGeneration);
 
         fitPopulation(newGeneration, generations_best_fitting);
+
         population = newGeneration;             // atribuindo a nova geração à população
     }
 
+
+    // imprimindo os melhores fittings a casda geração
     cout<<endl<<"FITTING POR GERACAO: "<<endl<<endl;
     if(generations_best_fitting.size()>0){
         for(int i=0; i<generations_best_fitting.size(); i++){
