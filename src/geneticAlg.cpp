@@ -51,7 +51,7 @@ void initializePopulation(vector<Individue> &population);    //  inicializa a po
 vector<int> createCromosom(int x1, int x2);                        // criação do código genético
 void mutation(vector<int> &cromosom);                       // mutação  de ponto único
 void elitism(vector<Individue> population, vector<Individue> &newGeneration);
-void fitPopulation(vector<Individue> &population, vector<float> &generations_best_fitting);
+void fitPopulation(vector<Individue> &population, vector<float> &generations_best, vector<float> &generations_worst);
 int tournament(vector<Individue> population, int n_candidates, float K);
 vector<int> crossover(vector<int> &parent1, vector<int> &parent2);
 
@@ -62,11 +62,12 @@ int main()
 {
     srand(time(nullptr));
     vector<Individue> population;
-    vector<float> generations_best_fitting;
+    vector<float> generations_best;
+    vector<float> generations_worst;
 
     // cout<<"POPULAÇÃO INICIAL: "<< endl;
     initializePopulation(population);
-    fitPopulation(population, generations_best_fitting);
+    fitPopulation(population, generations_best, generations_worst);
     // showPopulation(population);
 
     //LÓGICA DO ALGORITMO GENÉTICO
@@ -100,7 +101,7 @@ int main()
 
         elitism(population, newGeneration);
 
-        fitPopulation(newGeneration, generations_best_fitting);
+        fitPopulation(newGeneration, generations_best, generations_worst);
 
         population = newGeneration;             // atribuindo a nova geração à população
     }
@@ -108,9 +109,9 @@ int main()
 
     // imprimindo os melhores fittings a casda geração
     cout<<endl<<"FITTING POR GERACAO: "<<endl<<endl;
-    if(generations_best_fitting.size()>0){
-        for(int i=0; i<generations_best_fitting.size(); i++){
-            cout<<"Geracao "<< i << " : "<<generations_best_fitting[i]<<endl;
+    if(generations_best.size()>0 && generations_worst.size()>0){
+        for(int i=0; i<generations_number; i++){
+            cout<<"Geracao "<< i << " : "<<"Best="<<generations_best[i]<<"  |  Worst="<<generations_worst[i]<<endl;
         }
     }else{
         cout<<" Array de best fitting vazio "<<endl<<endl;
@@ -267,22 +268,27 @@ float fit_value(vector<int> cromosom){
 
 }
 
-void fitPopulation(vector<Individue> &population, vector<float> &generations_best_fitting){
+void fitPopulation(vector<Individue> &population, vector<float> &generations_best, vector<float> &generations_worst){
 
-    float best;
+    float best,worst;
 
     for(int i=0; i<population_size; i++){
         population[i].fitness_value = fit_value(population[i].cromosom);
 
         if(i==0){
             best = population[i].fitness_value;
+            worst = population[i].fitness_value;
         }else{
             if(population[i].fitness_value < best){
                 best = population[i].fitness_value;
             }
+            if(population[i].fitness_value > worst){
+                worst = population[i].fitness_value;
+            }
         }
     }
-    generations_best_fitting.push_back(best);
+    generations_best.push_back(best);
+    generations_worst.push_back(worst);
 }
 
 vector<int> createCromosom(int x1, int x2){
