@@ -1,3 +1,7 @@
+// DANILO DE CASTRO SILVA - 2017011925
+// LUCAS DAVES DE MELO GONÇALVES - 2017012397
+
+
 #include <iostream>
 #include <cstdlib>
 #include <cmath>
@@ -21,9 +25,9 @@ const int n_bits = 18;                  // número de bits para representar 200 
 const int population_size = 100;         // tamanho da população
 const int generations_number = 100;      //  número de gerações
 const float mutation_prob = 0.1;        // probabilidade de mutação
-const float crossing_prob = 0.8;        // probabilidade de cruzamento
-const float K = 0.8;                    // constante do torneio
-const float n_elitism = 0.3;            // elitismo de 20%
+const float crossing_prob = 0.7;        // probabilidade de cruzamento
+const float K = 0.7;                    // constante do torneio
+const float n_elitism = 0.2;            // elitismo de 20%
 
 
 // ********************** FUNÇÕES *********************** //
@@ -208,12 +212,12 @@ int tournament(vector<Individue> population, int n_candidates, float K){
 
     if(R<K){            // seleciona os indivíduos com menor fittnes
         for(int i=1; i<n_candidates; i++){
-            if(population[i].fitness_value < population[parent_index].fitness_value)
+            if(population[parent_index].fitness_value > population[candidates[i]].fitness_value)
                 parent_index = candidates[i];
         }
     }else{              // seleciona os indivíduos com maior fittnes
         for(int i=1; i<n_candidates; i++){
-            if(population[i].fitness_value > population[parent_index].fitness_value)
+            if(population[parent_index].fitness_value < population[candidates[i]].fitness_value)
                 parent_index = candidates[i];
         }
     }
